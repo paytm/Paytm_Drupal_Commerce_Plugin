@@ -28,7 +28,6 @@ DESCRIPTION :
 				- commerce_paytm.info
 				- commerce_paytm.module
 				- posttopaytm.php
-				- response.php
 				- checksum.php
 		
 		These are simple PHP files with different extensions 
@@ -38,7 +37,6 @@ DESCRIPTION :
 										module like posting cart information to Paytm with checksum and 
 										getting the response etc ..,  
 			* posttopaytm.php - This is the php file which is responsible for posting the form to the Paytm API.
-			* response.php - This is the php file used to receive the response from Paytm API.			
 			* checksum.php - Cotains general functions to find checksum.
 										
 ***************************************************************************************************************************
