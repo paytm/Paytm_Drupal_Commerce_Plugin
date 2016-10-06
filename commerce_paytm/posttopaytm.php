@@ -2,7 +2,7 @@
 <?php include('encdec_paytm.php'); ?>
 
 <?php
-	$secret = 'Secret key here';    // put your secret key here
+	$secret = 'your secret key';    // put your secret key here
 	$post_variables = Array(
 		"MID" =>  $_POST['MID'],
 		"ORDER_ID" =>  $_POST['ORDER_ID'],
@@ -11,12 +11,15 @@
 		"CHANNEL_ID" =>  $_POST['CHANNEL_ID'],
 		"INDUSTRY_TYPE_ID" =>  $_POST['INDUSTRY_TYPE_ID'],
 		"WEBSITE" =>  $_POST['WEBSITE'],
-		"CALLBACK_URL" =>  $_POST['CALLBACK_URL'],
     );
+	if($_POST['CALLBACK_MODE'] == '1')
+	{
+		$post_variables["CALLBACK_URL"] = $_POST['CALLBACK_URL'];
+	}
 	//$all = Checksum::getAllParams();
 
 	//var_dump($post_variables);
-		error_log("AllParams : ".$all);
+		//error_log("AllParams : ".$all);
 		error_log("Secret Key : ".$secret);
 	//$checksum = Checksum::calculateChecksum($secret, $all);
 	$checksum = getChecksumFromArray($post_variables, $secret);
@@ -43,7 +46,15 @@ function submitForm(){
 	</tr>
 	<tr>
 		<td align="center" valign="middle">
-			<form action="https://pguat.paytm.com/oltp-web/processTransaction" method="post">
+		<?php if($_POST['MODE']==1)
+		{
+			$paytm_url = 'https://secure.paytm.in/oltp-web/processTransaction';
+		}
+		else
+		{
+			$paytm_url = 'https://pguat.paytm.com/oltp-web/processTransaction';
+		}?>
+			<form action="<?php echo $paytm_url; ?>" method="post">
 				<?php
 				
 					echo  "<input type='hidden' name='MID' value='". $_POST['MID'] ."'/>";
@@ -55,8 +66,10 @@ function submitForm(){
 					echo "<input type='hidden' name='CUST_ID' value='". $_POST['CUST_ID'] ."'/>";
 					echo  "<input type='hidden' name='txnDate' value='".  $_POST['txnDate'] ."'/>";
 					echo  "<input type='hidden' name='CHECKSUMHASH' value='".  $checksum ."'/>";
-					echo  "<input type='hidden' name='CALLBACK_URL' value='".  $_POST['CALLBACK_URL'] ."'/>";
-
+					if($_POST['CALLBACK_MODE'] == '1')
+					{
+						echo  "<input type='hidden' name='CALLBACK_URL' value='".  $_POST['CALLBACK_URL'] ."'/>";
+					}
 				?>
 			</form>
 		</td>
