@@ -202,6 +202,8 @@ function paytm_redirect_form_validate($order, $payment_method) {
 	$responseDescription = $_POST['RESPMSG'];
 	$recd_checksum = $_POST['CHECKSUMHASH'];
 	$secret_key = $payment_method['settings']['secret_key'];
+	$merchant_id = $payment_method['settings']['merchantIdentifier'];
+	$mode = $payment_method['settings']['mode'];
 	//$all = getAllParams();
 	$all   = $_POST;
 			error_log("AllParams : ".$all);
@@ -211,9 +213,33 @@ function paytm_redirect_form_validate($order, $payment_method) {
 	$bool = verifychecksum_e( $all, $secret_key, $recd_checksum);
   $message = t('Security error ip Address was: @ip', array('@ip' => ip_address()));
   if ( $bool == TRUE && $responseCode == "01" ) {
-    return drupal_set_message(t('Thank you for shopping with us. Your order has been placed successfully.'));
-    commerce_paytm_transaction($order, $payment_method);
-    commerce_payment_redirect_pane_next_page($order);
+	  
+	// Create an array having all required parameters for status query.
+	$requestParamList = array("MID" => $merchant_id , "ORDERID" => $_POST['ORDERID']);
+	
+	// Call the PG's getTxnStatus() function for verifying the transaction status.
+	
+	if($mode=="1")
+	{
+		$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS';
+	}
+	else
+	{
+		$check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/TXNSTATUS';
+	}
+	$responseParamList = callAPI($check_status_url, $requestParamList);
+	if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$_POST['TXNAMOUNT'])
+	{
+		return drupal_set_message(t('Thank you for shopping with us. Your order has been placed successfully.'));
+		commerce_paytm_transaction($order, $payment_method);
+		commerce_payment_redirect_pane_next_page($order);
+	}
+	else
+	{
+		return drupal_set_message(t('Security Error. Illegal access detected. We will store your IP address.'), ERROR );
+		// watchdog('commerce_paytm', $message, NULL, WATCHDOG_ERROR);
+		watchdog('commerce_paytm', 'An invalid or empty order made it to checkout.  Order ID: !order_id', array('!order_id' => $order_id), WATCHDOG_ERROR);
+	}
   } 
   elseif ( $bool == TRUE && $responseCode != "01" ) {
     return drupal_set_message(('Thank you for shopping with us.However,the transaction has been declined.'));
