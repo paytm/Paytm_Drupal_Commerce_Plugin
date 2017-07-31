@@ -240,7 +240,7 @@ function paytm_redirect_form_validate($order, $payment_method) {
 	}
 	else
 	{
-		return drupal_set_message(t('Security Error. Illegal access detected. We will store your IP address.'), ERROR );
+		return drupal_set_message(t('It seems some issue in server to server communication. Kindly connect with administrator.'), ERROR );
 		// watchdog('commerce_paytm', $message, NULL, WATCHDOG_ERROR);
 		watchdog('commerce_paytm', 'An invalid or empty order made it to checkout.  Order ID: !order_id', array('!order_id' => $order_id), WATCHDOG_ERROR);
 	}
