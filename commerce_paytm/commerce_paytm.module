@@ -167,7 +167,7 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
     );
     $form['CUST_ID'] = array(
     '#type' => 'hidden',
-    '#value' => $buyerFirstName ,
+    '#value' => $buyerEmail ,
     );
     $form['TXN_AMOUNT'] = array(
     '#type' => 'hidden',
