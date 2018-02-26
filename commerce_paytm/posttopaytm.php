@@ -46,14 +46,22 @@ function submitForm(){
 	</tr>
 	<tr>
 		<td align="center" valign="middle">
-		<?php if($_POST['MODE']==1)
-		{
-			$paytm_url = 'https://secure.paytm.in/oltp-web/processTransaction';
-		}
-		else
-		{
-			$paytm_url = 'https://pguat.paytm.com/oltp-web/processTransaction';
-		}?>
+		<?php 
+			/*	19751/17Jan2018	*/
+				/*if($_POST['MODE']==1) {
+					$paytm_url = 'https://secure.paytm.in/oltp-web/processTransaction';
+				} else {
+					$paytm_url = 'https://pguat.paytm.com/oltp-web/processTransaction';
+				}*/
+
+				/*if($_POST['MODE']==1) {
+					$paytm_url = 'https://securegw.paytm.in/theia/processTransaction';
+				} else {
+					$paytm_url = 'https://securegw-stage.paytm.in/theia/processTransaction';
+				}*/
+				$paytm_url = $_POST['TRANSACTION_URL'];
+			/*	19751/17Jan2018 end	*/
+		?>
 			<form action="<?php echo $paytm_url; ?>" method="post">
 				<?php
 				
