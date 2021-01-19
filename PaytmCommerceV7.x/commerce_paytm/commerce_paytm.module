@@ -1,7 +1,7 @@
 <?php
 include('encdec_paytm.php');
-
-
+include('library/paytm/PaytmChecksum.php');
+include('library/paytm/PaytmHelper.php'); 
 /**
  * @file
  * Administration forms form payment method
@@ -72,6 +72,13 @@ function paytm_settings_form($settings = NULL) {
 	'#default_value' => $settings['callback_mode'],
 	'#options' => array(t('--- SELECT ---'), t('Yes'), t('No')),
   );
+
+  $form['mode'] = array(
+  '#title' => t('Select Mode'),
+  '#type' => 'select',  
+  '#default_value' => $settings['mode'],
+  '#options' => array(t('--- SELECT ---'), t('Staging'), t('Production')),
+  );
   return $form;
 }
 // register payment method
@@ -95,8 +102,8 @@ function paytm_redirect_form($form, &$form_state, $order, $payment_method) {
   $wrapper = entity_metadata_wrapper('commerce_order', $order);
   // Get financial info
   if($wrapper->commerce_customer_billing->commerce_customer_address->value()){
-$order_address = $wrapper->commerce_customer_billing->commerce_customer_address->value();
-}
+    $order_address = $wrapper->commerce_customer_billing->commerce_customer_address->value();
+    }
 
 $wrapper1 = entity_metadata_wrapper('field_data_field_phone_number', $order);
 //if($wrapper->commerce_customer_billing-> field_phone_number -> value())
@@ -112,7 +119,12 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
   $industry_type = $payment_method['settings']['industry_type'];
   $channel_id = $payment_method['settings']['channel_id'];
   $website = $payment_method['settings']['website'];
-  // $mode = $payment_method['settings']['mode'];
+  $mode = (isset($payment_method['settings']['mode']) && !empty($payment_method['settings']['mode']))?$payment_method['settings']['mode']:1;
+  if($mode ==1){
+    $mode = 0;
+  }else{
+    $mode = 1;
+  }
   $transaction_url = $payment_method['settings']['transaction_url'];
   $transaction_status_url = $payment_method['settings']['transaction_status_url'];
   $callback_mode = $payment_method['settings']['callback_mode'];
@@ -144,75 +156,107 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
 	//$ShipToPhoneNumber = "";
 	//$ShipToFirstname = "";
 	//$ShipToLastname = "";
-    $form['MID'] = array(
-    '#type' => 'hidden',
-    '#value' => $merchantIdentifier,
-    );
-    $form['ORDER_ID'] = array(
-    '#type' => 'hidden',
-    '#value' => $orderId,
-    );
-     /*$form['GATEWAY_URL'] = array(
-    '#type' => 'hidden',
-    '#value' => $gateway_url,
-    );*/
-	
-	/*$form['MODE'] = array(
-    '#type' => 'hidden',
-    '#value' => $mode,
-  );*/
-
-  $form['TRANSACTION_URL'] = array(
-    '#type' => 'hidden',
-    '#value' => $transaction_url,
-  );
-
-  $form['TRANSACTION_STATUS_URL'] = array(
-    '#type' => 'hidden',
-    '#value' => $transaction_status_url,
-  );
-	
-	$form['CALLBACK_MODE'] = array(
-    '#type' => 'hidden',
-    '#value' => $callback_mode,
-    );
+ 
+    $srcUrl = str_replace('MID',$merchantIdentifier, PaytmHelper::getPaytmURL(PaytmConstants::CHECKOUT_JS_URL, $mode));
     
-     $form['WEBSITE'] = array(
-    '#type' => 'hidden',
-    '#value' => $website,
+    $apiURL = PaytmHelper::getPaytmURL(PaytmConstants::INITIATE_TRANSACTION_URL,$mode) . '?mid='.$merchantIdentifier.'&orderId='.$orderId;
+    $paytmParams = array();
+    $paytmParams["body"] = array(
+      "requestType"   => "Payment",
+      "mid"           => $merchantIdentifier,
+      "websiteName"   => $website,
+      "orderId"       => $orderId,
+      "callbackUrl"   => $returnUrl,
+      "txnAmount"     => array(
+        "value"     => $amount,
+        "currency"  => "INR",
+      ),
+      "userInfo"      => array(
+        "custId"    => $buyerEmail,
+      ),
     );
-     $form['INDUSTRY_TYPE_ID'] = array(
-    '#type' => 'hidden',
-    '#value' => $industry_type,
-    );
-     $form['CHANNEL_ID'] = array(
-    '#type' => 'hidden',
-    '#value' => $channel_id,
-    );
-    $form['CUST_ID'] = array(
-    '#type' => 'hidden',
-    '#value' => $buyerEmail ,
-    );
-    $form['TXN_AMOUNT'] = array(
-    '#type' => 'hidden',
-    '#value' => $amount,
-    );
-    $form['CALLBACK_URL'] = array(
-    '#type' => 'hidden',
-    '#value' => $returnUrl,
-    );
-    $form['txnDate'] = array(
-    '#type' => 'hidden',
-    '#value' => $txnDate,
-    );
-    $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-  );
-	$form['#action']=url('sites/all/modules/commerce_paytm/posttopaytm.php');
-  return $form;
-}
+    /*
+    * Generate checksum by parameters we have in body
+    * Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys 
+    */
+    $checksum = PaytmChecksum::generateSignature(json_encode($paytmParams["body"], JSON_UNESCAPED_SLASHES), $payment_method['settings']['secret_key']);
 
+    $paytmParams["head"] = array(
+      "signature" => $checksum
+    );
+
+    $postData = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
+
+    $response = PaytmHelper::executecUrl($apiURL, $postData); 
+    $token = (isset($response['body']['txnToken']))?$response['body']['txnToken']:"";
+    if(!empty($token)){
+      echo '<style type="text/css">
+          #paytm-pg-spinner {margin: 20% auto 0;width: 70px;text-align: center;z-index: 999999;position: relative;}
+
+          #paytm-pg-spinner > div {width: 10px;height: 10px;background-color: #012b71;border-radius: 100%;display: inline-block;-webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;animation: sk-bouncedelay 1.4s infinite ease-in-out both;}
+
+          #paytm-pg-spinner .bounce1 {-webkit-animation-delay: -0.64s;animation-delay: -0.64s;}
+
+          #paytm-pg-spinner .bounce2 {-webkit-animation-delay: -0.48s;animation-delay: -0.48s;}
+          #paytm-pg-spinner .bounce3 {-webkit-animation-delay: -0.32s;animation-delay: -0.32s;}
+
+          #paytm-pg-spinner .bounce4 {-webkit-animation-delay: -0.16s;animation-delay: -0.16s;}
+          #paytm-pg-spinner .bounce4, #paytm-pg-spinner .bounce5{background-color: #48baf5;} 
+          @-webkit-keyframes sk-bouncedelay {0%, 80%, 100% { -webkit-transform: scale(0) }40% { -webkit-transform: scale(1.0) }}
+
+          @keyframes sk-bouncedelay { 0%, 80%, 100% { -webkit-transform: scale(0);transform: scale(0); } 40% { 
+              -webkit-transform: scale(1.0); transform: scale(1.0);}}
+          .paytm-overlay{width: 100%;position: fixed;top: 0px;opacity: .4;height: 100%;background: #000;}
+
+          </style>';
+      echo '<div id="paytm-pg-spinner" class="paytm-pg-loader"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div><div class="bounce4"></div><div class="bounce5"></div><div class="paytm-overlay paytm-pg-loader"></div><script type="application/javascript" crossorigin="anonymous" src="'.$srcUrl.'"></script>
+            <script>
+             function openJsCheckout() {
+               var config = {
+                          "root": "",
+                          "flow": "DEFAULT",
+                          "data": {
+                              "orderId": "'.$orderId.'",
+                              "token": "'.$token.'",
+                              "tokenType": "TXN_TOKEN",
+                              "amount": "'.$amount.'"
+                          },
+                          "merchant": {
+                              "redirect": true
+                          },
+                          "handler": {
+                      
+                              "notifyMerchant": function (eventName, data) {
+                                  
+                                 if(eventName == "SESSION_EXPIRED" || eventName == "APP_CLOSED"){
+                                  location.reload(); 
+                                 }
+                              }
+                          }
+                      };
+                      if (window.Paytm && window.Paytm.CheckoutJS) {
+                          // initialze configuration using init method 
+                          window.Paytm.CheckoutJS.init(config).then(function onSuccess() {
+                              // after successfully updating configuration, invoke checkoutjs
+                              window.Paytm.CheckoutJS.invoke();
+
+                          }).catch(function onError(error) {
+                            //  console.log("error => ", error);
+                          });
+                      }
+                      }
+                      setTimeout(function(){ openJsCheckout(); }, 3000);
+                      </script>
+          ';
+          exit();
+      }else{
+       return drupal_set_message(('Thank you for shopping with us.However,the transaction has been declined.'));
+        // watchdog('commerce_paytm', $message, NULL, WATCHDOG_ERROR);
+        //watchdog('commerce_paytm', 'An invalid or empty order made it to checkout.  Order ID: !order_id', array('!order_id' => $order_id), WATCHDOG_ERROR);
+        //commerce_payment_redirect_pane_previous_page($order);
+      }
+    
+  }
 
 
 /**
@@ -221,66 +265,53 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
 
 // validate payment
 function paytm_redirect_form_validate($order, $payment_method) {
+  $post_checksum = $_POST['CHECKSUMHASH'];
+  unset($_POST['CHECKSUMHASH']);
+  $secret_key = $payment_method['settings']['secret_key'];
+  $merchant_id = $payment_method['settings']['merchantIdentifier'];
+  $mode = (isset($payment_method['settings']['mode']) && !empty($payment_method['settings']['mode']))?$payment_method['settings']['mode']:1;
+  if($mode ==1){
+    $mode = 0;
+  }else{
+    $mode = 1;
+  }
   $orderId =  $_POST['ORDERID'];
   $responseCode = $_POST['RESPCODE'];
-	$responseDescription = $_POST['RESPMSG'];
-	$recd_checksum = $_POST['CHECKSUMHASH'];
-	$secret_key = $payment_method['settings']['secret_key'];
-	$merchant_id = $payment_method['settings']['merchantIdentifier'];
-  // $mode = $payment_method['settings']['mode'];
-  $transaction_url = $payment_method['settings']['transaction_url'];
-	$transaction_status_url = $payment_method['settings']['transaction_status_url'];
-	//$all = getAllParams();
-	$all   = $_POST;
-			error_log("AllParams : ".$all);
-		error_log("Secret Key : ".$secret_key);
-	$bool = false;
-	//$bool = verifyChecksum($recd_checksum, $all, $secret_key);
-	$bool = verifychecksum_e( $all, $secret_key, $recd_checksum);
-  $message = t('Security error ip Address was: @ip', array('@ip' => ip_address()));
-  if ( $bool == TRUE && $responseCode == "01" ) {
-	  
-	// Create an array having all required parameters for status query.
-	$requestParamList = array("MID" => $merchant_id , "ORDERID" => $_POST['ORDERID']);
-	
-	$StatusCheckSum = getChecksumFromArray($requestParamList, $secret_key);
-							
-	$requestParamList['CHECKSUMHASH'] = $StatusCheckSum;
-	
-	// Call the PG's getTxnStatus() function for verifying the transaction status.
-  /* 19751/17Jan2018 */
-    /*if($mode=="1")
+  $isValidChecksum = PaytmChecksum::verifySignature($_POST,$secret_key, $post_checksum);
+  //echo $isValidChecksum."-->";
+  if($isValidChecksum == 1){
+
+    if(!empty($_POST['STATUS'])) {
+      $reqParams = array(
+        "MID"     => $merchant_id,
+        "ORDERID"   => $orderId
+      );
+    $reqParams['CHECKSUMHASH'] = PaytmChecksum::generateSignature($reqParams, $secret_key);
+    if($_POST['STATUS'] == 'TXN_SUCCESS' || $_POST['STATUS'] == 'PENDING'){
+              /* number of retries untill cURL gets success */
+              $retry = 1;
+              do{
+                $postData = 'JsonData='.urlencode(json_encode($reqParams));
+                $resParams = PaytmHelper::executecUrl(PaytmHelper::getPaytmURL(PaytmConstants::ORDER_STATUS_URL, $mode), $postData);
+                $retry++;
+              } while(!$resParams['STATUS'] && $retry < PaytmConstants::MAX_RETRY_COUNT);
+              /* number of retries untill cURL gets success */
+              
+          }
+    }
+    if($resParams['STATUS']=='TXN_SUCCESS' && $resParams['TXNAMOUNT']==$_POST['TXNAMOUNT'])
     {
-      $check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/getTxnStatus';
+      return drupal_set_message(t('Thank you for shopping with us. Your order has been placed successfully.'));
+      commerce_paytm_transaction($order, $payment_method);
+      commerce_payment_redirect_pane_next_page($order);
     }
     else
     {
-      $check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/getTxnStatus';
-    }*/
-
-    /*if($mode=="1") {
-      $check_status_url = 'https://securegw.paytm.in/merchant-status/getTxnStatus';
-    } else {
-      $check_status_url = 'https://securegw-stage.paytm.in/merchant-status/getTxnStatus';
-    }*/
-    $check_status_url = $transaction_status_url;
-	/* 19751/17Jan2018 end */
-
-	$responseParamList = callNewAPI($check_status_url, $requestParamList);
-	if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$_POST['TXNAMOUNT'])
-	{
-		return drupal_set_message(t('Thank you for shopping with us. Your order has been placed successfully.'));
-		commerce_paytm_transaction($order, $payment_method);
-		commerce_payment_redirect_pane_next_page($order);
-	}
-	else
-	{
-		return drupal_set_message(t('It seems some issue in server to server communication. Kindly connect with administrator.'), ERROR );
-		// watchdog('commerce_paytm', $message, NULL, WATCHDOG_ERROR);
-		watchdog('commerce_paytm', 'An invalid or empty order made it to checkout.  Order ID: !order_id', array('!order_id' => $order_id), WATCHDOG_ERROR);
-	}
-  } 
-  elseif ( $bool == TRUE && $responseCode != "01" ) {
+      return drupal_set_message(t('It seems some issue in server to server communication. Kindly connect with administrator.'), ERROR );
+      // watchdog('commerce_paytm', $message, NULL, WATCHDOG_ERROR);
+      watchdog('commerce_paytm', 'An invalid or empty order made it to checkout.  Order ID: !order_id', array('!order_id' => $order_id), WATCHDOG_ERROR);
+    }
+  }elseif ( $isValidChecksum == 1 && $responseCode != "01" ) {
     return drupal_set_message(('Thank you for shopping with us.However,the transaction has been declined.'));
     commerce_paytm_transaction($order, $payment_method);
     commerce_payment_redirect_pane_previous_page($order);
@@ -384,7 +415,5 @@ function calculateChecksum($secret_key, $all) {
 		return $bool;
 	}
 
-	
-	
-	
+  
 ?>

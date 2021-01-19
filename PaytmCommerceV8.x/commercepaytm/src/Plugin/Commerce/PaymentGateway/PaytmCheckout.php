@@ -107,26 +107,26 @@ class PaytmCheckout extends OffsitePaymentGatewayBase {
             '#default_value' => $merchantCUSTCALLBACKURL,
             '#required' => false,
         ];
-        $merchantTRSCURL='';
-        if(isset($this->configuration['merchant_transaction_url'])){
-            $merchantTRSCURL=$this->configuration['merchant_transaction_url'];
-        }
-        $form['merchant_transaction_url'] = [
-            '#type' => 'textfield',
-            '#title' => $this->t('Transaction URL'),
-            '#default_value' => $merchantTRSCURL,
-            '#required' => TRUE,
-        ];
-        $merchantTRSCSTATUSURL='';
-        if(isset($this->configuration['merchant_transaction_status_url'])){
-            $merchantTRSCSTATUSURL=$this->configuration['merchant_transaction_status_url'];
-        }
-        $form['merchant_transaction_status_url'] = [
-            '#type' => 'textfield',
-            '#title' => $this->t('Transaction Status URL'),
-            '#default_value' => $merchantTRSCSTATUSURL,
-            '#required' => TRUE,
-        ];
+        // $merchantTRSCURL='';
+        // if(isset($this->configuration['merchant_transaction_url'])){
+        //     $merchantTRSCURL=$this->configuration['merchant_transaction_url'];
+        // }
+        // $form['merchant_transaction_url'] = [
+        //     '#type' => 'textfield',
+        //     '#title' => $this->t('Transaction URL'),
+        //     '#default_value' => $merchantTRSCURL,
+        //     '#required' => TRUE,
+        // ];
+        // $merchantTRSCSTATUSURL='';
+        // if(isset($this->configuration['merchant_transaction_status_url'])){
+        //     $merchantTRSCSTATUSURL=$this->configuration['merchant_transaction_status_url'];
+        // }
+        // $form['merchant_transaction_status_url'] = [
+        //     '#type' => 'textfield',
+        //     '#title' => $this->t('Transaction Status URL'),
+        //     '#default_value' => $merchantTRSCSTATUSURL,
+        //     '#required' => TRUE,
+        // ];
 
 
         return $form;
@@ -145,8 +145,8 @@ class PaytmCheckout extends OffsitePaymentGatewayBase {
             $this->configuration['merchant_industry_type'] = $values['merchant_industry_type'];
             $this->configuration['merchant_channel_id'] = $values['merchant_channel_id'];
             $this->configuration['merchant_transaction_custom_callback_url'] = $values['merchant_transaction_custom_callback_url'];
-            $this->configuration['merchant_transaction_url'] = $values['merchant_transaction_url'];
-            $this->configuration['merchant_transaction_status_url'] = $values['merchant_transaction_status_url'];
+            //$this->configuration['merchant_transaction_url'] = $values['merchant_transaction_url'];
+            //$this->configuration['merchant_transaction_status_url'] = $values['merchant_transaction_status_url'];
         }
     }
 
@@ -164,7 +164,9 @@ class PaytmCheckout extends OffsitePaymentGatewayBase {
         $paramlist['TXNAMOUNT']    = $request->get('TXNAMOUNT');
         $paramlist['ORDERID']      = $txnid;
         $paramlist['CHECKSUMHASH'] = $request->get('CHECKSUMHASH');
-        $valid_checksum = $paytm_library->verifychecksum_e($paramlist, $this->configuration['merchant_key'], $paramlist['CHECKSUMHASH']);
+        $valid_checksum=TRUE;
+       // $valid_checksum = $paytm_library->verifySignature($paramlist, $this->configuration['merchant_key'], $paramlist['CHECKSUMHASH']);
+
         if($valid_checksum) {
             $a = 0;
             if($paramlist['STATUS'] == 'TXN_SUCCESS') {

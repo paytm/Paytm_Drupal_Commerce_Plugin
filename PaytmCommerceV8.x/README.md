@@ -16,6 +16,6 @@
       * Transaction Status URL
         * Staging     - https://securegw-stage.paytm.in/merchant-status/getTxnStatus
         * Production  - https://securegw.paytm.in/merchant-status/getTxnStatus
-  4. Your Wordpress Donation plug-in is now installed. You can accept payment through Paytm.
+  4. Your Commerce plug-in is now installed. You can accept payment through Paytm.
 
 # In case of any query, please contact to Paytm.

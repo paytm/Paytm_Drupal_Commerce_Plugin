@@ -1,8 +1,6 @@
 <?php
-namespace Drupal\commercepaytm;
 
-class PaytmLibrary {
-
+class PaytmChecksum{
 
 	private static $iv = "@@@@&&&&####$$$$";
 
@@ -116,6 +114,4 @@ class PaytmLibrary {
 			return false;
 		return substr($text, 0, -1 * $pad);
 	}
-
-
 }
