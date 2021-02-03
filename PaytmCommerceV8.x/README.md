@@ -10,12 +10,6 @@
       * Merchant Website          - Provided by Paytm
       * Industry type             - Provided by Paytm
       * Channel ID                - WEB/WAP
-      * Transaction URL
-        * Staging     - https://securegw-stage.paytm.in/theia/processTransaction
-        * Production  - https://securegw.paytm.in/theia/processTransaction
-      * Transaction Status URL
-        * Staging     - https://securegw-stage.paytm.in/merchant-status/getTxnStatus
-        * Production  - https://securegw.paytm.in/merchant-status/getTxnStatus
   4. Your Commerce plug-in is now installed. You can accept payment through Paytm.
 
 # In case of any query, please contact to Paytm.
