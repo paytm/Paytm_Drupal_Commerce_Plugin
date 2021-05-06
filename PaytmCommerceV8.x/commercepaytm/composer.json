@@ -1,5 +1,5 @@
 {
-  "name": "drupal/commerce_paypal",
+  "name": "drupal/commercepaytm",
   "type": "drupal-module",
   "description": "Provides Commerce integration for Paytm Payment Gateway",
   "homepage": "http://drupal.org/project/commercepaytm",
