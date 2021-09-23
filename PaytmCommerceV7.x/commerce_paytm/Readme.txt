@@ -24,10 +24,9 @@ An installation procedure for the module:
 
 DESCRIPTION :
 
-		When you Extract the zip file, it has five files
+		When you Extract the zip file, it has below files
 				- commerce_paytm.info
 				- commerce_paytm.module
-				- posttopaytm.php
 				- checksum.php
 		
 		These are simple PHP files with different extensions 
@@ -36,7 +35,6 @@ DESCRIPTION :
 			* commerce_paytm.module - This is the core file which includes all the funcionalities for the 
 										module like posting cart information to Paytm with checksum and 
 										getting the response etc ..,  
-			* posttopaytm.php - This is the php file which is responsible for posting the form to the Paytm API.
 			* checksum.php - Cotains general functions to find checksum.
 										
 ***************************************************************************************************************************

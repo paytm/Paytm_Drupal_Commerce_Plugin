@@ -1,5 +1,5 @@
 <?php
-include('encdec_paytm.php');
+#include('encdec_paytm.php');
 include('library/paytm/PaytmChecksum.php');
 include('library/paytm/PaytmHelper.php'); 
 /**
@@ -83,11 +83,14 @@ function paytm_settings_form($settings = NULL) {
 }
 // register payment method
 function commerce_paytm_commerce_payment_method_info() {
+  $logo = _commerce_paytm_logo();
+  $icon = _commerce_paytm_icons();
+  $display_title = t(''.$logo.' <br/>!logo', array('!logo' => $icon));
   $payment_methods = array();
   $payment_methods['paytm'] = array(
-    'title' => t("paytm"),
-    'display_title' => "paytm",
-    'short_title' => 'paytm',
+    'title' => t("Paytm"),
+    'display_title' => $display_title,
+    'short_title' => 'Paytm',
     'description' => t("Payment method for paytm"),
     'terminal' => FALSE,
     'offsite' => TRUE,
@@ -99,6 +102,7 @@ function commerce_paytm_commerce_payment_method_info() {
 
 // Ask for paytm redirect form
 function paytm_redirect_form($form, &$form_state, $order, $payment_method) {
+  $cartUrl = url('cart/', array('absolute' => TRUE));
   $wrapper = entity_metadata_wrapper('commerce_order', $order);
   // Get financial info
   if($wrapper->commerce_customer_billing->commerce_customer_address->value()){
@@ -128,7 +132,8 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
   $transaction_url = $payment_method['settings']['transaction_url'];
   $transaction_status_url = $payment_method['settings']['transaction_status_url'];
   $callback_mode = $payment_method['settings']['callback_mode'];
-  $orderId = $order->order_id;
+  //$orderId = $order->order_id;
+  $orderId = $order->order_id."_".time();
   $buyerEmail = $wrapper->mail->value();
   $txnDate=date('Y-m-d H:i:s');
   $buyerFirstName =$order_address['first_name'];
@@ -189,6 +194,7 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
 
     $response = PaytmHelper::executecUrl($apiURL, $postData); 
     $token = (isset($response['body']['txnToken']))?$response['body']['txnToken']:"";
+    $pluginVersion = PaytmConstants::PLUGIN_VERSION;
     if(!empty($token)){
       echo '<style type="text/css">
           #paytm-pg-spinner {margin: 20% auto 0;width: 70px;text-align: center;z-index: 999999;position: relative;}
@@ -221,6 +227,10 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
                               "tokenType": "TXN_TOKEN",
                               "amount": "'.$amount.'"
                           },
+                          "integration": {
+                            "platform": "Drupal",
+                            "version": "7|'.$pluginVersion.'"
+                          },
                           "merchant": {
                               "redirect": true
                           },
@@ -229,7 +239,7 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
                               "notifyMerchant": function (eventName, data) {
                                   
                                  if(eventName == "SESSION_EXPIRED" || eventName == "APP_CLOSED"){
-                                  location.reload(); 
+                                    window.location.href = "'.$returnUrl.'";
                                  }
                               }
                           }
@@ -265,6 +275,11 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
 
 // validate payment
 function paytm_redirect_form_validate($order, $payment_method) {
+  if(count($_POST) <= 0){
+    commerce_payment_redirect_pane_previous_page($order);
+    return drupal_set_message(t('Transaction cancelled.'), 'error' );
+    exit;
+  }
   $post_checksum = $_POST['CHECKSUMHASH'];
   unset($_POST['CHECKSUMHASH']);
   $secret_key = $payment_method['settings']['secret_key'];
@@ -278,7 +293,6 @@ function paytm_redirect_form_validate($order, $payment_method) {
   $orderId =  $_POST['ORDERID'];
   $responseCode = $_POST['RESPCODE'];
   $isValidChecksum = PaytmChecksum::verifySignature($_POST,$secret_key, $post_checksum);
-  //echo $isValidChecksum."-->";
   if($isValidChecksum == 1){
 
     if(!empty($_POST['STATUS'])) {
@@ -299,7 +313,7 @@ function paytm_redirect_form_validate($order, $payment_method) {
               
           }
     }
-    if($resParams['STATUS']=='TXN_SUCCESS' && $resParams['TXNAMOUNT']==$_POST['TXNAMOUNT'])
+    if(isset($resParams) && $resParams['STATUS']=='TXN_SUCCESS' && $resParams['TXNAMOUNT']==$_POST['TXNAMOUNT'])
     {
       return drupal_set_message(t('Thank you for shopping with us. Your order has been placed successfully.'));
       commerce_paytm_transaction($order, $payment_method);
@@ -307,6 +321,7 @@ function paytm_redirect_form_validate($order, $payment_method) {
     }
     else
     {
+      commerce_payment_redirect_pane_previous_page($order);
       return drupal_set_message(t('It seems some issue in server to server communication. Kindly connect with administrator.'), 'error' );
       // watchdog('commerce_paytm', $message, NULL, WATCHDOG_ERROR);
       watchdog('commerce_paytm', 'An invalid or empty order made it to checkout.  Order ID: !order_id', array('!order_id' => $order_id), WATCHDOG_ERROR);
@@ -415,5 +430,31 @@ function calculateChecksum($secret_key, $all) {
 		return $bool;
 	}
 
+  /**
+   * Returns Paytm icon image location.
+   */
+  function _commerce_paytm_logo() {
+    $variable = array(
+      'path' => drupal_get_path('module', 'commerce_paytm') . '/images/' . 'paytm_logo.png',
+      'title' => 'Paytm',
+      'alt' => 'Paytm',
+      'attributes' => array(
+        'class' => array('commerce-paytm-icon'),
+      ),
+    );
+    return theme('image', $variable);
+  }
+
+  function _commerce_paytm_icons() {
+    $variable = array(
+      'path' => drupal_get_path('module', 'commerce_paytm') . '/images/' . 'paytm_detail.png',
+      'title' => 'Paytm',
+      'alt' => 'Paytm',
+      'attributes' => array(
+        'class' => array('commerce-paytm-icon'),
+      ),
+    );
+    return theme('image', $variable);
+  }
   
 ?>
