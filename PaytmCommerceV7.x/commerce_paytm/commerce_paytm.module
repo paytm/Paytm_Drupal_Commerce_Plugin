@@ -196,7 +196,9 @@ $order_address=$wrapper->commerce_customer_billing->commerce_customer_address->v
     $token = (isset($response['body']['txnToken']))?$response['body']['txnToken']:"";
     $pluginVersion = PaytmConstants::PLUGIN_VERSION;
     if(!empty($token)){
-      echo '<style type="text/css">
+      echo '<head>
+            <meta name=“viewport” content=“width=device-width, initial-scale=1.0">
+            </head><style type="text/css">
           #paytm-pg-spinner {margin: 20% auto 0;width: 70px;text-align: center;z-index: 999999;position: relative;}
 
           #paytm-pg-spinner > div {width: 10px;height: 10px;background-color: #012b71;border-radius: 100%;display: inline-block;-webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;animation: sk-bouncedelay 1.4s infinite ease-in-out both;}
