@@ -107,7 +107,7 @@ class PaytmCheckoutForm extends BasePaymentOffsiteForm {
 
 		
 		$responseArray = json_decode($jsonResponse, true);
-
+        $pluginVersion = PaytmConstants::PLUGIN_VERSION;
 		if(!empty($responseArray['body']['txnToken'])){
 			$txnToken = $responseArray['body']['txnToken'];
 		}else{
@@ -125,6 +125,10 @@ class PaytmCheckoutForm extends BasePaymentOffsiteForm {
                             "token": "'.$txnToken.'",
                             "tokenType": "TXN_TOKEN",
                             "amount": "'.round($payment->getAmount()->getNumber(), 2).'"
+                        },
+						"integration": {
+                            "platform": "Paytm_Drupal_Commerce",
+                            "version": "8|'.$pluginVersion.'"
                         },
                         "merchant": {
                             "redirect": true
