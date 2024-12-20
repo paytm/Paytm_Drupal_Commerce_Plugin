@@ -1,7 +1,7 @@
 <?php
 class PaytmConstants{
-	CONST PRODUCTION_HOST						= "https://securegw.paytm.in/";
-	CONST STAGING_HOST							= "https://securegw-stage.paytm.in/";
+	CONST PRODUCTION_HOST						= "https://secure.paytmpayments.com/";
+	CONST STAGING_HOST							= "https://securestage.paytmpayments.com/";
 
 	CONST ORDER_PROCESS_URL						= "order/process";
 	CONST ORDER_STATUS_URL						= "order/status";

@@ -1,8 +1,8 @@
 <?php
 
 class PaytmConstants{
-	CONST PRODUCTION_HOST						= "https://securegw.paytm.in/";
-	CONST STAGING_HOST							= "https://securegw-stage.paytm.in/";
+	CONST PRODUCTION_HOST						= "https://secure.paytmpayments.com/";
+	CONST STAGING_HOST							= "https://securestage.paytmpayments.com/";
 
 	CONST ORDER_PROCESS_URL						= "order/process";
 	CONST ORDER_STATUS_URL						= "order/status";
@@ -19,8 +19,8 @@ class PaytmConstants{
 	CONST CONNECT_TIMEOUT						= 10;
 	CONST TIMEOUT								= 10;
 
-	CONST LAST_UPDATED							= "20230830";
-	CONST PLUGIN_VERSION						= "2.4";
+	CONST LAST_UPDATED							= "20241220";
+	CONST PLUGIN_VERSION						= "2.5";
 
 	CONST CUSTOM_CALLBACK_URL					= "";
 	CONST IS_BLINK_SUPPORTED					= true;

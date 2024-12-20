@@ -15,8 +15,8 @@ class PaytmCheckoutForm extends BasePaymentOffsiteForm {
 
 		/*const PAYTM_API_TEST_URL = 'https://pguat.paytm.com/oltp-web/processTransaction';
 		const PAYTM_API_URL = 'https://secure.paytm.in/oltp-web/processTransaction';*/
-		/*const PAYTM_API_TEST_URL = 'https://securegw-stage.paytm.in/theia/processTransaction';
-		const PAYTM_API_URL = 'https://securegw.paytm.in/theia/processTransaction';*/
+		/*const PAYTM_API_TEST_URL = 'https://securestage.paytmpayments.com/theia/processTransaction';
+		const PAYTM_API_URL = 'https://secure.paytmpayments.com/theia/processTransaction';*/
 		/**
 		 * {@inheritdoc}
 		 */
@@ -38,10 +38,10 @@ class PaytmCheckoutForm extends BasePaymentOffsiteForm {
 				// $mode = $payment_gateway_plugin->getConfiguration()['pmode'];
 				$mode = $payment_gateway_plugin->getConfiguration()['mode'];
 				if($mode=='test'){
-				$paytmDmain = 'https://securegw-stage.paytm.in/';
+				$paytmDmain = 'https://securestage.paytmpayments.com/';
 				$paytmInitTxnUrl = $paytmDmain.'theia/api/v1/initiateTransaction?mid=';
 				}else{
-				$paytmDmain = 'https://securegw.paytm.in/';
+				$paytmDmain = 'https://secure.paytmpayments.com/';
 				$paytmInitTxnUrl = $paytmDmain.'theia/api/v1/initiateTransaction?mid=';
 				}
 				//$PAYTM_ENV
